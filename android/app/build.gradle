@@ -22,11 +22,6 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-
-def keystorePropertiesFile = rootProject.file("key.properties")
-def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-
 android {
     compileSdk 34
     ndkVersion flutter.ndkVersion
@@ -62,37 +57,6 @@ android {
         multiDexEnabled true
     }
 
-    signingConfigs {
-        debug {
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-        }
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-        }
-    }
-
-    buildTypes {
-        release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.release
-            applicationVariants.all { variant ->
-                variant.outputs.all { output ->
-                    def abi = output.getFilter(com.android.build.OutputFile.ABI)
-                    if (abi != null) {   // null for the universal-debug, universal-release variants
-                        outputFileName = "PicaComic-${variant.versionName}-${abi}.apk"
-                    } else {
-                        outputFileName = "PicaComic-${variant.versionName}.apk"
-                    }
-                }
-            }
-        }
-    }
     namespace 'com.kokoiro.xyz.pica_comic'
 }
 

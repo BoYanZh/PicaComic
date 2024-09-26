@@ -38,4 +38,3 @@ jobs:
       with:
         name: macos-build.zip
         path: build/macos/Build/Products/Release/pica_comic.app
- 

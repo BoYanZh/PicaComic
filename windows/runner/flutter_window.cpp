@@ -109,10 +109,10 @@ bool FlutterWindow::OnCreate() {
     );
     channel3.SetMethodCallHandler(
         [this](const flutter::MethodCall<>& call, const std::unique_ptr<flutter::MethodResult<>>& result) {
-            auto value = static_cast<COLORREF>(std::get<int64_t>(*call.arguments()));
-            COLORREF color = RGB(GetRValue(value), GetGValue(value), GetBValue(value));
-            DwmSetWindowAttribute(GetHandle(), DWMWA_CAPTION_COLOR,
-            &color, sizeof(color));
+            // auto value = static_cast<COLORREF>(std::get<int64_t>(*call.arguments()));
+            // COLORREF color = RGB(GetRValue(value), GetGValue(value), GetBValue(value));
+            // DwmSetWindowAttribute(GetHandle(), DWMWA_CAPTION_COLOR,
+            // &color, sizeof(color));
             RedrawWindow(GetHandle(), NULL, 0, RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
             result->Success();
         });
