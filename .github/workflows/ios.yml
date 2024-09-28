@@ -6,7 +6,7 @@ jobs:
   Build_IOS:
     runs-on: macos-13
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
@@ -26,7 +26,7 @@ jobs:
   Build_MacOS:
     runs-on: macos-13
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
@@ -36,5 +36,5 @@ jobs:
     - run: flutter build macos --release
     - uses: actions/upload-artifact@v4
       with:
-        name: macos-build.zip
+        name: macos-build
         path: build/macos/Build/Products/Release/pica_comic.app

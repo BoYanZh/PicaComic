@@ -1,0 +1,163 @@
+name: Release
+run-name: Release
+on:
+  workflow_dispatch: {}
+
+jobs:
+  Build_IOS:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          architecture: x64
+      - run: sudo xcode-select --switch /Applications/Xcode_14.3.1.app
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+      - run: |
+          mkdir -p /Users/runner/work/PicaComic/PicaComic/build/ios/iphoneos/Payload
+          mv /Users/runner/work/PicaComic/PicaComic/build/ios/iphoneos/Runner.app /Users/runner/work/PicaComic/PicaComic/build/ios/iphoneos/Payload
+          cd /Users/runner/work/PicaComic/PicaComic/build/ios/iphoneos/
+          zip -r app-ios.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-ios.ipa
+          path: /Users/runner/work/PicaComic/PicaComic/build/ios/iphoneos/app-ios.ipa
+  Build_MacOS:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          architecture: x64
+      - run: sudo xcode-select --switch /Applications/Xcode_14.3.1.app
+      - run: flutter pub get
+      - run: flutter build macos --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: build/macos/Build/Products/Release/pica_comic.app
+  Build_Android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          architecture: x64
+      - run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev webkit2gtk-4.1
+      - name: Decode Keystore
+        env:
+          ENCODED_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.RELEASE_KEY_PROPERTIES }}
+        run: |
+          echo $ENCODED_KEYSTORE > keystore_base64.txt
+          base64 -d keystore_base64.txt > /home/runner/upload-keystore.jks
+          cat << EOF > android/key.properties
+          ${{ secrets.RELEASE_KEY_PROPERTIES }}
+          EOF
+      - run: flutter build apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-android
+          path: build/app/outputs/apk/release
+  Build_Linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          architecture: x64
+      - run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev webkit2gtk-4.1
+          dart pub global activate flutter_to_debian
+      - run: python3 debian/build.py
+      - run: dart run flutter_to_arch
+      - run: |
+          sudo rm -rf build/linux/arch/app.tar.gz
+          sudo rm -rf build/linux/arch/pkg
+          sudo rm -rf build/linux/arch/src
+          sudo rm -rf build/linux/arch/PKGBUILD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb_build
+          path: build/linux/x64/release/debian
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch_build
+          path: build/linux/arch/
+  Build_Windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          architecture: x64
+      - run: python3 windows/build_windows.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-windows
+          path: build/windows/x64/runner/Release
+  Create_Release:
+    needs:
+      [
+        Build_IOS,
+        Build_MacOS,
+        Build_Android,
+        Build_Linux,
+        Build_Windows,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+      - name: Clean up artifacts
+        run: |
+          cd artifacts/macos-build
+          zip -r ../app-macos.zip .
+          cd ../..
+          rm -rf artifacts/macos-build
+          cd artifacts/app-windows
+          zip -r ../app-windows.zip .
+          cd ../..
+          rm -rf artifacts/app-windows
+          rm -rf artifacts/app-android/output-metadata.json
+          rm -rf artifacts/arch_build/Dockerfile
+          rm -rf artifacts/arch_build/pica_comic-debug-*.pkg.tar.zst
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*
+          name: Latest Github Actions Build
+          tag_name: latest
+          body: |
+            Automated release created by GitHub Actions.
+
+            This release includes builds for:
+            - iOS
+            - macOS
+            - Android
+            - Linux
+            - Windows
+
+            Created by GitHub Actions run: [Release #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -22,6 +22,10 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 android {
     compileSdk 34
     ndkVersion flutter.ndkVersion
@@ -55,6 +59,32 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+    }
+
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            applicationVariants.all { variant ->
+                variant.outputs.all { output ->
+                    def abi = output.getFilter(com.android.build.OutputFile.ABI)
+                    if (abi != null) {   // null for the universal-debug, universal-release variants
+                        outputFileName = "PicaComic-${variant.versionName}-${abi}.apk"
+                    } else {
+                        outputFileName = "PicaComic-${variant.versionName}.apk"
+                    }
+                }
+            }
+        }
     }
 
     namespace 'com.kokoiro.xyz.pica_comic'
