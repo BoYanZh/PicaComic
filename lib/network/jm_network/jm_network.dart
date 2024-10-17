@@ -82,10 +82,10 @@ class JmNetwork {
   static JmNetwork? cache;
 
   static const urls = <String>[
-    "https://www.jmeadpoolcdn.one",
-    "https://www.jmeadpoolcdn.life",
-    "https://www.jmapiproxyxxx.one",
-    "https://www.jmfreedomproxy.xyz"
+    "https://www.cdnxxx-proxy.vip",
+    "https://www.cdnxxx-proxy.xyz",
+    "https://www.cdnblackmyth.xyz",
+    "https://www.cdnxxx-proxy.co"
   ];
 
   String get baseUrl => urls[int.parse(appdata.settings[17])];
@@ -143,7 +143,7 @@ class JmNetwork {
       if (res.statusCode == 401) {
         var message =
             const JsonDecoder().convert(res.data)["errorMsg"] ?? "Error";
-        if (message == "請先登入會員" && jm.isLogin && !isRetry) {
+        if (message == "请先登入会员" && jm.isLogin && !isRetry) {
           var res = await jm.reLogin();
           if (res) {
             return get(
